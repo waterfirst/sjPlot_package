@@ -1,0 +1,112 @@
+library(tidyverse)   # for everything useful in R ;) 
+library(ISLR)        # for "Wage" dataset about salaries
+library(sjPlot)      # for easy visualization
+library(likert)      # for "pisaitems" dataset with likert data
+library(lme4)        # for mixed-effects models
+library(lmerTest)    # for p-values in mixed-effects models
+
+head(Wage)
+glimpse(Wage)
+
+Wage %>% as_tibble()
+
+view_df(Wage)
+
+view_df(Wage, show.frq = T, show.prc = T, show.na = T)
+
+library(ggpubr) # for stat_cor() function
+
+Wage %>% 
+  plot_frq(education)
+
+p <- Wage %>% 
+  group_by(race) %>% 
+  plot_frq(education) %>%
+  plot_grid()
+
+save_plot(filename = "race_vs_education.jpg", fig = p, width = 30, height = 19)
+
+
+plot_grpfrq(
+  var.cnt = Wage$education, 
+  var.grp = Wage$jobclass)
+
+# as stacked proportional bars
+plot_xtab(
+  x   = Wage$education, 
+  grp = Wage$jobclass, 
+  margin  = "row", 
+  bar.pos = "stack",
+  show.summary = TRUE,
+  coord.flip   = TRUE)
+
+
+tab_xtab(
+  var.row = Wage$education, 
+  var.col = Wage$jobclass, 
+  show.row.prc = T)
+
+
+Wage %>% 
+  plot_gpt(x = health_ins, y = jobclass, grp = education) 
+
+
+Wage %>% 
+  group_by(jobclass) %>% 
+  plot_frq(wage, type = "histogram", show.mean = TRUE, normal.curve = TRUE) %>% 
+  plot_grid()
+
+
+m <- lm(wage ~ education, data = Wage)
+plot_model(m, type = "pred")
+
+summary(m)
+
+plot_model(m, show.values = TRUE, width = 0.1)+
+  ylab("Increase in salary as compared to no education")
+
+
+m.nb <- glmer.nb(age ~ wage * jobclass * health + (1|education), data = Wage)
+
+plot_model(m.nb, type = "int")[[4]]
+ggsave("plot_model2.jpg", device = jpeg, plot = last_plot(), width = 5, height = 3)
+#이 상호 작용은 건강이 매우 좋은 산업 근로자가 31세에 이미 5만 달러를 벌고 있는 반면 IT 군중은 동일한 급여를 받는다는 것을 보여줍니다. 그러나 8년 후, 45세가 되면 IT 군중이 공장 노동자를 따라잡기 시작하고 서서히 추월하기 시작하고 마침내 IT 사람들이 50세에 이미 30만 달러의 급여를 받는 반면 공장 노동자는 이러한 종류의 부는 약 63세의 나이에 캐리어가 끝날 때만 가능합니다. 그리고 겹치지 않는 신뢰 구간은 급여의 이러한 차이가 중요하다는 것을 나타냅니다.
+
+plot_model(m.nb, type = "pred", terms = c("health", "jobclass", "wage [50, 150, 300]"))
+
+
+plot_model(m.nb, 
+           type  = "re", 
+           width = .5, 
+           show.values = T) + ylim(0.9,1.1)
+
+# fit two models
+fit1 <- lm(age ~ education + jobclass + health_ins, data = Wage)
+fit2 <- lm(wage ~ education + jobclass + health_ins, data = Wage)
+
+# plot multiple models
+plot_models(fit1, fit2, show.values = T, grid = TRUE)
+#동일한 예측 변수를 사용하여 여러 종속 변수를 탐색하려는 경우 plot_models 함수를 사용하여 한 번에 여러 모델을 그릴 수 있습니다. 첫 번째 코드 예제에서 우리는 이미 친숙한 인수 show.values와 새로운 인수를 사용할 것입니다. 이 인수 grid는 그림에서 정보의 혼잡과 과부하를 피하기 위해 별도의 필드에 모델을 표시합니다.
+
+plot_models(fit1, fit2, p.shape = TRUE)
+
+
+tab_model(fit1, fit2, 
+          collapse.ci = TRUE, 
+          p.style     = "numeric_stars")
+
+##################################################################################
+library(likert)
+data(pisaitems)
+
+d <- pisaitems %>% 
+  dplyr::select(starts_with("ST25Q"))
+
+tab_model(m, 
+          show.reflvl = T, 
+          show.intercept = F, 
+          p.style = "numeric_stars")
+
+view_df(d, show.frq = T, show.prc = T)
+
+plot_likert(d) 
